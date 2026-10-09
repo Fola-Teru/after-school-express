@@ -1,7 +1,7 @@
 
 const express = require('express');
 const cors = require('cors');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const path = require('path');
 
 require('dotenv').config();
@@ -33,6 +33,33 @@ async function startServer() {
     app.get('/lessons', async (req, res) => {
       const lessons = await lessonsCollection.find({}).toArray();
       res.json(lessons);
+    });
+
+    app.put('/lessons/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).json({ error: 'Invalid lesson ID' });
+        }
+
+        const updates = req.body;
+        if (!updates || typeof updates !== 'object' || Array.isArray(updates) || Object.keys(updates).length === 0) {
+          return res.status(400).json({ error: 'At least one lesson field is required' });
+        }
+
+        const result = await lessonsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updates }
+        );
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ error: 'Lesson not found' });
+        }
+
+        res.json({ message: 'Lesson updated' });
+      } catch (error) {
+        console.error('Failed to update lesson:', error);
+        res.status(500).json({ error: 'Failed to update lesson' });
+      }
     });
 
     app.post('/orders', async (req, res) => {
