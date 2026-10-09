@@ -2,12 +2,25 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
-    
+const path = require('path');
+
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+function logRequest(req, res, next) {
+  const time = new Date().toISOString();
+  console.log(time, req.method, req.url);
+  next();
+}
+app.use(logRequest);
+
+app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/images', (req, res) => {
+  res.status(404).send('Image not found');
+});
 
 async function startServer() {
   try {
